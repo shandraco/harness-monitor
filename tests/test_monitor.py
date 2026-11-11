@@ -114,6 +114,28 @@ class ServerTest(unittest.TestCase):
         e.exception.close()
         self.assertEqual(post("/api/hook", {}, headers={"X-Monitor-Token": "wrong"}, token=False), 401)
 
+    def test_session_cookie_cannot_post(self):
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *a, **k):
+                return None
+        with self.assertRaises(urllib.error.HTTPError) as e:
+            urllib.request.build_opener(NoRedirect).open(BASE + "/?t=" + TOKEN["value"], timeout=3)
+        cookie = e.exception.headers["Set-Cookie"].split(";")[0]
+        e.exception.close()
+        self.assertNotIn(TOKEN["value"], cookie)
+        self.assertEqual(post("/api/project", {"path": "/"}, headers={"Cookie": cookie}, token=False), 401)
+
+    def test_negative_length_rejected(self):
+        import http.client
+        c = http.client.HTTPConnection("127.0.0.1", int(PORT), timeout=3)
+        c.putrequest("POST", "/api/hook", skip_host=True)
+        for k, v in (("Host", f"127.0.0.1:{PORT}"), ("Content-Type", "application/json"),
+                     ("X-Monitor-Token", TOKEN["value"]), ("Content-Length", "-1")):
+            c.putheader(k, v)
+        c.endheaders()
+        self.assertEqual(c.getresponse().status, 400)
+        c.close()
+
     def test_browser_link_sets_cookie(self):
         class NoRedirect(urllib.request.HTTPRedirectHandler):
             def redirect_request(self, *a, **k):

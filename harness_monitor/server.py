@@ -11,6 +11,7 @@ import hmac
 import json
 import os
 import queue
+import secrets
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -23,7 +24,11 @@ PORT = int(os.environ.get("HARNESS_MONITOR_PORT", "4849"))
 ALLOWED_HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
 # Per-run secret from `harnessmonitor start` (env, never argv). Every /api call and the page need it,
 # so other local users and processes can neither read the activity nor re-point the monitor.
-TOKEN = os.environ.get("HARNESS_MONITOR_TOKEN", "")
+# Fail closed: without a token from the CLI, make one and print the link in main().
+TOKEN = os.environ.get("HARNESS_MONITOR_TOKEN") or secrets.token_urlsafe(24)
+# Browsers send localhost cookies to every port, so the cookie holds a separate session id kept in
+# memory, never the token. Sessions only allow viewing (GET); posting needs the token header.
+SESSIONS = set()
 COOKIE = f"hm_{PORT}"
 LOCKED = """<!doctype html><meta charset="utf-8"><title>Harness Monitor</title>
 <body style="font:18px/1.5 sans-serif;max-width:36em;margin:4em auto;padding:0 16px">
@@ -161,15 +166,16 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def _authed(self):
-        if not TOKEN:
-            return True
+    def _authed(self, allow_session=False):
         given = self.headers.get("X-Monitor-Token", "")
-        for part in self.headers.get("Cookie", "").split(";"):
-            k, _, v = part.strip().partition("=")
-            if k == COOKIE:
-                given = given or v
-        return hmac.compare_digest(given.encode(), TOKEN.encode())
+        if given and hmac.compare_digest(given.encode(), TOKEN.encode()):
+            return True
+        if allow_session:
+            for part in self.headers.get("Cookie", "").split(";"):
+                k, _, v = part.strip().partition("=")
+                if k == COOKIE and v in SESSIONS:
+                    return True
+        return False
 
     def do_GET(self):
         if self.headers.get("Host", "") not in ALLOWED_HOSTS:
@@ -179,12 +185,14 @@ class Handler(BaseHTTPRequestHandler):
             if not hmac.compare_digest(query[2:].encode(), TOKEN.encode()):
                 return self._send(401, LOCKED.encode(), "text/html; charset=utf-8")
             self.send_response(303)
-            self.send_header("Set-Cookie", f"{COOKIE}={TOKEN}; Path=/; HttpOnly; SameSite=Strict")
+            sid = secrets.token_urlsafe(24)
+            SESSIONS.add(sid)
+            self.send_header("Set-Cookie", f"{COOKIE}={sid}; Path=/; HttpOnly; SameSite=Strict")
             self.send_header("Location", "/")
             self.send_header("Content-Length", "0")
             self.end_headers()
             return
-        if not self._authed():
+        if not self._authed(allow_session=True):
             if path.startswith("/api/"):
                 return self._send(401, {"error": "Missing token"})
             if path in ("/", "/index.html"):
@@ -224,13 +232,17 @@ class Handler(BaseHTTPRequestHandler):
         # JSON content type forces a CORS preflight that is never approved: web pages can't post here.
         if not self.headers.get("Content-Type", "").startswith("application/json"):
             return self._send(415, {"error": "Send JSON"})
+        if not self._authed():
+            self.close_connection = True
+            return self._send(401, {"error": "Missing token"})
         try:
             n = int(self.headers.get("Content-Length") or 0)
-            body = json.loads(self.rfile.read(min(n, 2_000_000)) or b"{}")
+            if n < 0 or n > 2_000_000:
+                raise ValueError("bad length")
+            body = json.loads(self.rfile.read(n) or b"{}")
         except (ValueError, json.JSONDecodeError):
+            self.close_connection = True
             return self._send(400, {"error": "Bad JSON"})
-        if not self._authed():
-            return self._send(401, {"error": "Missing token"})
         path = self.path.split("?")[0]
         if path == "/api/hook":
             if isinstance(body, dict) and in_project(body, MON.project):
@@ -261,7 +273,8 @@ def main():
     threading.Thread(target=MON.watch, daemon=True).start()
     ThreadingHTTPServer.daemon_threads = True
     httpd = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    print(f"Harness Monitor: http://127.0.0.1:{PORT}  watching {MON.project}", flush=True)
+    link = f"http://127.0.0.1:{PORT}" + ("" if os.environ.get("HARNESS_MONITOR_TOKEN") else f"/?t={TOKEN}")
+    print(f"Harness Monitor: {link}  watching {MON.project}", flush=True)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
