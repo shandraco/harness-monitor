@@ -14,6 +14,8 @@ what you actually built.
 - Python 3.9+ standard library only. No npm, no pip dependencies.
 - Works on macOS, Linux and Windows.
 
+Download: **https://harness-monitor.vercel.app/download** (zip of the latest version)
+
 ## Install
 
 Pick the agent you use. You only need one of these.
