@@ -1,0 +1,57 @@
+{
+  "description": "Sends Claude Code activity (prompts, tool use, turn ends) to the local Harness Monitor, using its per-run token. Does nothing when the monitor is not running.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "T=\"${HARNESS_MONITOR_HOME:-$HOME/.harness-monitor}/token\"; [ -r \"$T\" ] && curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Agent: claude-code' -H \"X-Monitor-Token: $(cat \"$T\")\" --data-binary @- http://127.0.0.1:4849/api/hook >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "T=\"${HARNESS_MONITOR_HOME:-$HOME/.harness-monitor}/token\"; [ -r \"$T\" ] && curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Agent: claude-code' -H \"X-Monitor-Token: $(cat \"$T\")\" --data-binary @- http://127.0.0.1:4849/api/hook >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "T=\"${HARNESS_MONITOR_HOME:-$HOME/.harness-monitor}/token\"; [ -r \"$T\" ] && curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Agent: claude-code' -H \"X-Monitor-Token: $(cat \"$T\")\" --data-binary @- http://127.0.0.1:4849/api/hook >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "T=\"${HARNESS_MONITOR_HOME:-$HOME/.harness-monitor}/token\"; [ -r \"$T\" ] && curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Agent: claude-code' -H \"X-Monitor-Token: $(cat \"$T\")\" --data-binary @- http://127.0.0.1:4849/api/hook >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "T=\"${HARNESS_MONITOR_HOME:-$HOME/.harness-monitor}/token\"; [ -r \"$T\" ] && curl -s -m 2 -X POST -H 'Content-Type: application/json' -H 'X-Agent: claude-code' -H \"X-Monitor-Token: $(cat \"$T\")\" --data-binary @- http://127.0.0.1:4849/api/hook >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ]
+  }
+}

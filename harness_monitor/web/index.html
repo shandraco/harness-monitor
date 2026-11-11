@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harness Monitor</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/monitor.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand">
+    <strong id="name">Harness Monitor</strong>
+    <span id="path"></span>
+  </div>
+  <div class="bar-right">
+    <span class="src claude">Named by the agent</span>
+    <span class="src code">Found in code</span>
+    <span class="src ext">From another tool</span>
+    <span id="conn" class="conn" data-state="off">Connecting…</span>
+  </div>
+</header>
+<main class="layout">
+  <section class="stage">
+    <div class="progress"><b id="count">0 of 13 kinds</b> <span id="totals"></span></div>
+    <div id="kinds" class="kinds" aria-label="Kinds of harness part. Pick one to see what it means."></div>
+    <svg id="diagram" viewBox="0 0 1000 540" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Diagram of every harness part in this project and the paths between them"></svg>
+    <div class="zoom" role="group" aria-label="Zoom">
+      <button id="zin" type="button" aria-label="Zoom in">+</button>
+      <button id="zout" type="button" aria-label="Zoom out">&minus;</button>
+      <button id="zfit" type="button">Fit</button>
+    </div>
+    <div class="legend" aria-label="What the arrows mean">
+      <span><i class="l flow"></i>sends</span><span><i class="l back"></i>comes back</span><span><i class="l fail"></i>failed, try again</span><span><i class="l data"></i>saves or loads</span><span><i class="l guard"></i>checks or limits</span>
+    </div>
+    <div id="banner" class="banner" hidden></div>
+    <p id="hint" class="hint" hidden></p>
+  </section>
+  <aside class="side">
+    <div id="detail" class="detail"></div>
+    <h3>Activity</h3>
+    <div id="feed" class="feed"><p class="empty">Waiting for your coding agent. Ask it to build something.</p></div>
+  </aside>
+</main>
+<script src="/vendor/elk.bundled.js"></script>
+<script src="/monitor.js"></script>
+</body>
+</html>

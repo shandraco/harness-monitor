@@ -1,0 +1,10 @@
+{
+  "name": "harnessmonitor",
+  "version": "0.1.0",
+  "description": "Live diagram of an AI agent harness (model, loop, tools, guardrails, checks, agents, memory, retrieval) that lights up each part as your coding agent builds it.",
+  "author": {"name": "shandraco"},
+  "license": "MIT",
+  "repository": "https://github.com/shandraco/harness-monitor",
+  "homepage": "https://github.com/shandraco/harness-monitor",
+  "keywords": ["agents", "harness", "visualization", "diagram", "teaching"]
+}

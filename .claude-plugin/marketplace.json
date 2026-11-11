@@ -1,0 +1,14 @@
+{
+  "name": "harness-monitor",
+  "owner": {
+    "name": "shandraco"
+  },
+  "description": "Harness Monitor: watch an AI agent harness take shape as your coding agent builds it.",
+  "plugins": [
+    {
+      "name": "harnessmonitor",
+      "source": "./",
+      "description": "Live diagram of an AI agent harness as your coding agent builds it."
+    }
+  ]
+}
